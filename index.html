@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>くらしの相談ナビ｜稲美町社会福祉協議会（試作版）</title>
+<title>くらしの相談ナビ｜稲美町社会福祉協議会</title>
 <!--
 ============================================================================
-  くらしの相談ナビ（試作）
+  くらしの相談ナビ
   稲美町社会福祉協議会
 
   ■ このファイルについて
@@ -19,8 +19,10 @@
     ・「【要確認】」と書いてある部分は、正しい数字・電話番号・担当課に
       置き換えてください（憶測で書いていない箇所です）。
     ・住民が読む部分（summary／target／support／flow／cost）はやさしい言葉、
-      専門的な要件・根拠は basis／staffNote（画面では「職員確認用」の折りたたみ）
-      に分けています。
+      専門的な要件・根拠は basis／staffNote（画面では「くわしい情報」の折りたたみ。
+      住民の方も開いて読めます）に分けています。
+    ・掲載内容の「時点」を更新したら、下の DATA_ASOF を書き換えてください
+      （画面上部のバッジ・注意書き・フッター・相談シートに自動で反映されます）。
     ・HTMLの知識がなくても、" " で囲まれた日本語の文章を書き換えるだけで直せます。
       （山かっこ < > やカンマ , は消さないようにご注意ください）
 ============================================================================
@@ -165,6 +167,13 @@
     background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:10px;
     padding:12px 14px;font-size:14px;color:#7a5a1e;margin:14px 0;
   }
+  .notice{
+    background:#fffdf5;border:1.5px solid var(--warn-line);border-radius:var(--radius);
+    padding:14px 18px;font-size:14px;color:#6b5320;margin:18px 0 6px;line-height:1.8;
+  }
+  .notice b.title{display:block;font-size:15px;margin-bottom:4px;color:#8a6a1e;}
+  .notice ul{margin:4px 0 0;padding-left:20px;}
+  .notice li{margin-bottom:4px;}
   .todo{color:#b3431b;font-weight:bold;}
 
   .madoguchi{
@@ -213,10 +222,19 @@
 <header class="site">
   <h1>くらしの相談ナビ</h1>
   <p>稲美町社会福祉協議会｜あなたの「困った」に合う制度・窓口をご案内します</p>
-  <span class="draft-badge">試作版（職員確認用）</span>
+  <span class="draft-badge js-asof"></span>
 </header>
 
 <div class="wrap">
+
+  <div class="notice no-print">
+    <b class="title">⚠️ ご利用にあたってのお願い</b>
+    <ul>
+      <li>このサイトは、制度や相談窓口を「探す」ための<b>参考情報</b>です。掲載内容は<b><span class="js-asof-date"></span>時点</b>のものです。</li>
+      <li>制度の内容・金額・条件は変わることがあり、実際に使えるかどうかはお一人おひとりの状況によって異なります。<b>手続きや大切な判断をされる前に、必ずご自身で最新の情報をお確かめいただくか、社会福祉協議会・役場などの相談窓口や福祉専門職にご相談・ご確認ください。</b></li>
+      <li>掲載内容には正確を期していますが、本サイトの記載をそのまま信頼してご利用になったことで生じた損害について、当会は責任を負いかねます（補償はいたしかねます）。</li>
+    </ul>
+  </div>
 
   <div class="steps" id="steps">
     <div class="st active" data-step="1"><span class="dot">1</span>悩みを選ぶ</div>
@@ -233,6 +251,19 @@
     <h2 class="q">どんなことでお困りですか？</h2>
     <p class="lead">いちばん近いものを選んでください。あとから変えられます。</p>
     <div class="cat-grid" id="catGrid"></div>
+
+    <div class="qblock free" style="margin-top:26px;">
+      <label for="searchText">✏️ 文章で書いて探すこともできます</label>
+      <p class="lead" style="margin:0 0 10px;">いま困っていることを、そのまま文章でお書きください。内容に合いそうな制度を探します。<b>書いた内容はどこにも送信されません</b>（この画面の中だけで処理します）。</p>
+      <textarea id="searchText" placeholder="例）夫が亡くなってから収入が減り、家賃の支払いが難しい。中学生の子どもが一人いる。"></textarea>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="act" onclick="searchByText()">🔍 この内容に合う制度を探す</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="act ghost wide" onclick="showAllPrograms()">📚 掲載しているすべての制度・支援を一覧で見る</button>
+    </div>
   </section>
 
   <!-- ===== STEP2：詳しく選ぶ ===== -->
@@ -298,12 +329,25 @@
     <p class="warn no-print" id="copyMsg" style="display:none;">コピーしました。メールやAIチャットなどに貼り付けられます。</p>
   </section>
 
+  <!-- ===== 制度・支援の一覧 ===== -->
+  <section class="panel" id="panelAll">
+    <button class="back" onclick="goStep(1)">← 最初の画面にもどる</button>
+    <h2 class="q">制度・支援の一覧</h2>
+    <p class="lead">このナビに掲載しているすべての制度・支援です（<span class="js-asof-date"></span>時点）。各カードの「🔎 くわしい情報」を開くと、制度の根拠や、窓口で確認するポイントもご覧いただけます。</p>
+    <div id="allList"></div>
+    <div class="btn-row">
+      <button class="act ghost" onclick="goStep(1)">最初の画面にもどる</button>
+    </div>
+  </section>
+
 </div>
 
 <footer class="site">
-  くらしの相談ナビ（試作版）｜稲美町社会福祉協議会<br>
+  くらしの相談ナビ｜稲美町社会福祉協議会（TEL 079-492-8668）<br>
+  <span class="js-asof"></span><br>
   ※この画面に入力した内容は外部に送信されません。<br>
-  ※制度の内容・金額は変わることがあります。最新の正確な内容は社協の窓口でご確認ください。
+  ※本サイトは参考情報です。制度の内容・金額・条件は変わることがあります。手続きや大切な判断の前に、必ず相談窓口・福祉専門職にご確認ください。<br>
+  ※本サイトの記載をそのまま信頼してご利用になったことで生じた損害について、当会は責任を負いかねます。
 </footer>
 
 <script>
@@ -311,6 +355,11 @@
    ★★★ 編集ゾーン ここから ★★★
    坂口さんが文言・窓口情報・制度内容を直す場合は、おもにこの中だけ触ればOKです。
    =========================================================================== */
+
+/* --- ⓪ 掲載内容の時点 -------------------------------------------------------
+   制度の内容を見直したら、この日付を書き換えてください。
+   画面上部のバッジ・注意書き・フッター・相談シートに自動で反映されます。 */
+const DATA_ASOF = "令和8年（2026年）7月";
 
 /* --- ① 稲美町社協の窓口情報 ------------------------------------------------ */
 const CONTACT = {
@@ -860,6 +909,58 @@ const CATEGORIES = [
   }
 ];
 
+/* --- ④ 自由記述検索のキーワード辞書 -----------------------------------------
+   「文章で書いて探す」で使う、ことば→制度の対応表です。
+   住民がよく使いそうな言い回しを追加すると、検索が賢くなります。 */
+const KEYWORDS = {
+  jiritsu_soudan:["生活費","生活が苦しい","暮らしが苦しい","お金がない","お金が足りない","収入が減","仕事がない","仕事が見つから","失業","無職","働きたい","就職","生活に困","リストラ","給料が下が"],
+  fukushi_shikin:["借りたい","貸付","貸して","お金を借り","学費","進学","入学","引っ越し","引越","緊急小口"],
+  kakei_kaizen:["家計","やりくり","借金","滞納","債務","返済","ローン","多重債務","公共料金","税金を払え","税金が払え"],
+  jukyo_kakuho:["家賃","住むところ","住まい","立ち退き","アパート","住宅","住居"],
+  food_support:["食べるもの","食べ物","食料","食事に困","フードバンク","食べるのに困","お米がない"],
+  seikatsu_hogo:["生活保護"],
+  iryo_keigen:["医療費","入院","手術","治療費","病院代","透析","限度額","高額療養"],
+  nichijo_jiritsu:["通帳","お金の管理","金銭管理","物忘れ","もの忘れ","支払いを忘れ","書類が難しい","手続きが難しい","手続きができない"],
+  seinen_kouken:["成年後見","後見","財産管理","財産","契約が不安","判断能力","認知症"],
+  gyakutai:["虐待","暴力","暴言","たたかれる","叩かれる","殴られ","使い込み","年金を取られ","お金を取られ","世話をしてくれない","放置され"],
+  houkatsu:["高齢","親の介護","介護の相談","包括","一人暮らしの親","ひとり暮らしの親","親が心配"],
+  kaigo_hoken:["介護保険","要介護","要支援","デイサービス","ヘルパー","訪問介護","ショートステイ","施設に入","老人ホーム","介護が必要"],
+  koureisha_service:["配食","お弁当","弁当を届け","緊急通報","あんしんボタン","見守り","寝具","理美容","はり","きゅう"],
+  kaigo_keigen:["介護費","利用料が高い","利用料が重い","施設の食費","部屋代","負担限度額","高額介護"],
+  korei_iryo:["65歳","66歳","67歳","68歳","69歳"],
+  kaigo_teate:["寝たきり","介護手当","介護している","介護で疲れ","介護に疲れ","介護がつらい"],
+  shogai_soudan:["障がい","障害","しょうがい"],
+  shogai_techo:["障害者手帳","療育手帳","精神障害者保健福祉手帳","手帳を取り","手帳をとり"],
+  shogai_service:["生活介護","就労支援","作業所","グループホーム","短期入所","居宅介護"],
+  shogai_iryo:["精神科","通院","自立支援医療","難病","重度障害者医療"],
+  shogai_child:["発達","療育","放課後デイ","児童発達","ことばが遅い","言葉が遅い","落ち着きがない","発達障害","発達障がい"],
+  shogai_teate:["特別障害者手当","障害児福祉手当","特別児童扶養手当"],
+  shogai_yogu:["車いす","車椅子","補聴器","義肢","装具","ストーマ","つえ","杖","介護ベッド"],
+  shogai_chiiki:["手話","移動支援","外出が難しい","外出できない","ヘルプマーク","NET119","通所費"],
+  kosodate_soudan:["子育て","育児","赤ちゃん","子どもの相談","夜泣き","離乳食","健診"],
+  jido_teate:["児童手当"],
+  boshi_iryo:["母子家庭","父子家庭","ひとり親の医療"],
+  kodomo_iryo:["子どもの医療費","こども医療","子供の医療費"],
+  hitorioya:["ひとり親","一人親","母子家庭","父子家庭","シングルマザー","シングルファザー","離婚","養育費","児童扶養手当","夫が亡くな","妻が亡くな"],
+  kosodate_gyakutai:["子どもをたたい","子どもを叩い","叩いてしま","怒鳴って","虐待かも","接し方","育てられない","泣き声が"],
+  shussan:["妊娠","出産","妊婦","マタニティ","つわり","産後"],
+  hoiku:["保育","こども園","幼稚園","預け","無償化","入園"],
+  kosodate_hiroba:["遊び場","親子で遊","ママ友","子育てひろば","いなみっこ"],
+  kokoro_soudan:["気分が落ち込","落ち込み","落ち込ん","眠れない","うつ","死にたい","消えたい","生きているのが","つらくてたまらない","お酒がやめられ","アルコール","こころの","心の病","精神的に","メンタル"],
+  hikikomori:["ひきこもり","引きこもり","こもって","家から出ない","部屋から出ない","外に出られない","不登校","働けない","8050"],
+  tsunagari:["孤立","話し相手","さみしい","寂しい","ひとりぼっち","居場所","友達がいない","サロン","ボランティア","交流"]
+};
+
+/* --- ⑤ 「制度の一覧」の並び順 ---------------------------------------------- */
+const ALL_GROUPS = [
+  {title:"💰 お金・生活費・仕事のこと", programs:["jiritsu_soudan","fukushi_shikin","kakei_kaizen","jukyo_kakuho","food_support","seikatsu_hogo","iryo_keigen"]},
+  {title:"🛡️ 判断能力・お金や書類の管理のこと", programs:["nichijo_jiritsu","seinen_kouken","gyakutai"]},
+  {title:"🧓 高齢・介護のこと", programs:["houkatsu","kaigo_hoken","koureisha_service","kaigo_keigen","korei_iryo","kaigo_teate"]},
+  {title:"♿ 障がいのこと", programs:["shogai_soudan","shogai_techo","shogai_service","shogai_iryo","shogai_child","shogai_teate","shogai_yogu","shogai_chiiki"]},
+  {title:"👶 子育て・ひとり親のこと", programs:["kosodate_soudan","jido_teate","boshi_iryo","kodomo_iryo","hitorioya","kosodate_gyakutai","shussan","hoiku","kosodate_hiroba"]},
+  {title:"💚 こころ・ひきこもり・孤立のこと", programs:["kokoro_soudan","hikikomori","tsunagari"]}
+];
+
 /* ===========================================================================
    ★★★ 編集ゾーン ここまで ★★★
    この下は画面を動かす仕組みです。通常は触らなくて大丈夫です。
@@ -904,48 +1005,114 @@ function toggleOpt(input){
   input.closest('.opt').classList.toggle('checked', input.checked);
 }
 
+function programCard(id){
+  const p = PROGRAMS[id];
+  if(!p) return null;
+  const card = document.createElement('div');
+  card.className = 'prog';
+  const allText = [p.target,p.support,p.flow,p.cost,p.contact,p.basis,p.staffNote].join('');
+  const todo = allText.includes('【要確認】')
+    ? '<div class="warn">⚠️ <span class="todo">【要確認】</span>の箇所は、社協で正しい内容に更新してから住民公開してください。</div>' : '';
+  const row = (lbl,val)=> val ? `<div class="row"><span class="lbl">${lbl}</span>${val}</div>` : '';
+  card.innerHTML = `
+    <h3>${p.name}<span class="scope ${p.scope}">${scopeLabel[p.scope]}</span></h3>
+    ${p.summary ? `<div class="psum">${p.summary}</div>` : ''}
+    ${row('こんなとき', p.target)}
+    ${row('受けられること', p.support)}
+    ${row('進め方', p.flow)}
+    ${row('お金のこと', p.cost)}
+    ${row('どこに相談？', p.contact)}
+    ${(p.basis||p.staffNote) ? `
+    <details class="staff">
+      <summary>🔎 くわしい情報（制度の根拠・窓口で確認するポイント）</summary>
+      <div class="row" style="color:var(--sub);font-size:13px;">※やや専門的な内容です。窓口で相談するときの手がかりとしてお使いください。</div>
+      ${row('根拠・実施主体', p.basis)}
+      ${row('窓口で確認するポイント', p.staffNote)}
+    </details>` : ''}
+    ${todo}`;
+  return card;
+}
+
+function renderResult(ids, introHtml){
+  const intro = document.getElementById('resultIntro');
+  const list = document.getElementById('programList');
+  list.innerHTML = '';
+  intro.innerHTML = introHtml;
+  ids.forEach(id=>{ const c = programCard(id); if(c) list.appendChild(c); });
+  renderContact();
+  goStep(3);
+}
+
 function showResult(){
   const checked = [...document.querySelectorAll('#questionArea input:checked')];
   const ids = [];
   checked.forEach(c=>c.value.split(',').forEach(id=>{ if(!ids.includes(id)) ids.push(id); }));
 
-  const intro = document.getElementById('resultIntro');
-  const list = document.getElementById('programList');
-  list.innerHTML = '';
+  /* STEP2の自由記述に書かれた内容からも候補を探して合流させる */
+  const free = document.getElementById('freeText').value.trim();
+  let added = 0;
+  if(free){
+    matchByKeywords(free).forEach(id=>{ if(!ids.includes(id)){ ids.push(id); added++; } });
+  }
 
   if(ids.length===0){
-    intro.innerHTML = '選択がありませんでした。当てはまるものにチェックを入れて、もう一度お試しください。<br>はっきりしない場合も、社協の窓口でお話をうかがえます。';
+    renderResult(ids, '選択がありませんでした。当てはまるものにチェックを入れて、もう一度お試しください。<br>はっきりしない場合も、社協の窓口でお話をうかがえます。');
   }else{
-    intro.innerHTML = `選んでいただいた内容から、<b>${ids.length}件</b>の制度・支援が関係しそうです。<br>あくまで目安です。実際に使えるかは要件があり、社協の職員が一緒に確認します。`;
-    ids.forEach(id=>{
-      const p = PROGRAMS[id];
-      if(!p) return;
-      const card = document.createElement('div');
-      card.className = 'prog';
-      const allText = [p.target,p.support,p.flow,p.cost,p.contact,p.basis,p.staffNote].join('');
-      const todo = allText.includes('【要確認】')
-        ? '<div class="warn">⚠️ <span class="todo">【要確認】</span>の箇所は、社協で正しい内容に更新してから住民公開してください。</div>' : '';
-      const row = (lbl,val)=> val ? `<div class="row"><span class="lbl">${lbl}</span>${val}</div>` : '';
-      card.innerHTML = `
-        <h3>${p.name}<span class="scope ${p.scope}">${scopeLabel[p.scope]}</span></h3>
-        ${p.summary ? `<div class="psum">${p.summary}</div>` : ''}
-        ${row('こんなとき', p.target)}
-        ${row('受けられること', p.support)}
-        ${row('進め方', p.flow)}
-        ${row('お金のこと', p.cost)}
-        ${row('どこに相談？', p.contact)}
-        ${(p.basis||p.staffNote) ? `
-        <details class="staff">
-          <summary>🔎 職員確認用（根拠・確認ポイント）</summary>
-          ${row('根拠・実施主体', p.basis)}
-          ${row('確認ポイント', p.staffNote)}
-        </details>` : ''}
-        ${todo}`;
-      list.appendChild(card);
-    });
+    let msg = `選んでいただいた内容から、<b>${ids.length}件</b>の制度・支援が関係しそうです。`;
+    if(added>0) msg += `（自由記述の文章から見つかった候補${added}件を含みます）`;
+    msg += `<br>あくまで目安です。実際に使えるかは要件があり、社協の職員が一緒に確認します。`;
+    renderResult(ids, msg);
   }
-  renderContact();
-  goStep(3);
+}
+
+/* ===== 自由記述からの制度検索（ブラウザ内のことば照合。外部送信なし） ===== */
+function matchByKeywords(text){
+  if(!text) return [];
+  const scores = {};
+  Object.keys(KEYWORDS).forEach(id=>{
+    let s = 0;
+    KEYWORDS[id].forEach(kw=>{ if(text.includes(kw)) s++; });
+    if(s>0) scores[id] = s;
+  });
+  return Object.keys(scores).sort((a,b)=>scores[b]-scores[a]).slice(0,8);
+}
+
+function searchByText(){
+  const text = document.getElementById('searchText').value.trim();
+  if(!text){ alert('困っていることを文章で書いてから、ボタンを押してください。'); return; }
+  const ids = matchByKeywords(text);
+
+  /* 相談シート・AI相談文にも引き継げるよう、STEP2の自由記述欄へ写しておく */
+  const freeBox = document.getElementById('freeText');
+  if(!freeBox.value.trim()) freeBox.value = text;
+
+  let msg;
+  if(/死にたい|消えたい|自殺|命を絶/.test(text)){
+    if(!ids.includes('kokoro_soudan')) ids.unshift('kokoro_soudan');
+    msg = `<b>おつらい気持ちを書いてくださって、ありがとうございます。どうかひとりで抱え込まず、できるだけ早くご相談ください。</b><br>稲美町社会福祉協議会 TEL 079-492-8668（平日8:30〜17:15）。夜間などの緊急のときは、ためらわず119番・110番へ。<br><br>お書きいただいた内容から、<b>${ids.length}件</b>の制度・支援が見つかりました。`;
+  }else if(ids.length===0){
+    msg = 'お書きいただいた内容からは、ぴったりの制度をうまく見つけられませんでした。<br>「分野から選ぶ」ボタンもお試しください。どこに相談してよいか分からないときも、そのまま社協（TEL 079-492-8668）へお電話いただければ、職員が一緒に整理します。';
+  }else{
+    msg = `お書きいただいた内容から、<b>${ids.length}件</b>の制度・支援が見つかりました。<br>ことばによる簡易的な検索のため、合わないものが混ざったり、必要な制度が出てこないことがあります。あくまで目安として、くわしくは社協へご相談ください。`;
+  }
+  renderResult(ids, msg);
+}
+
+/* ===== 制度・支援の一覧表示 ===== */
+function showAllPrograms(){
+  const list = document.getElementById('allList');
+  list.innerHTML = '';
+  ALL_GROUPS.forEach(g=>{
+    const h = document.createElement('h2');
+    h.className = 'q';
+    h.textContent = g.title;
+    list.appendChild(h);
+    g.programs.forEach(id=>{ const c = programCard(id); if(c) list.appendChild(c); });
+  });
+  for(let i=1;i<=4;i++) document.getElementById('panel'+i).classList.remove('show');
+  document.getElementById('panelAll').classList.add('show');
+  document.querySelectorAll('#steps .st').forEach(s=>s.classList.remove('active'));
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderContact(){
@@ -969,7 +1136,7 @@ function buildReport(){
   const dstr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
 
   let html = `<h3>相談シート（稲美町社会福祉協議会）</h3>
-    <p class="rep-meta">作成日：${dstr}　／　くらしの相談ナビ（試作版）で作成</p>`;
+    <p class="rep-meta">作成日：${dstr}　／　くらしの相談ナビで作成（掲載内容：${DATA_ASOF}時点）</p>`;
 
   html += `<div class="rep-sec"><div class="rep-h">1. 相談したい分野</div>
     <div>${currentCat ? currentCat.emoji+' '+currentCat.title : '（未選択）'}</div></div>`;
@@ -1030,6 +1197,7 @@ function goStep(n){
   for(let i=1;i<=4;i++){
     document.getElementById('panel'+i).classList.toggle('show', i===n);
   }
+  document.getElementById('panelAll').classList.remove('show');
   document.querySelectorAll('#steps .st').forEach(s=>{
     s.classList.toggle('active', Number(s.dataset.step)===n);
   });
@@ -1083,6 +1251,8 @@ ${ctx||'（特定の制度は選ばれていません。一般的な案内をお
 }
 
 initCats();
+document.querySelectorAll('.js-asof').forEach(e=>{ e.textContent = '掲載内容：' + DATA_ASOF + '時点'; });
+document.querySelectorAll('.js-asof-date').forEach(e=>{ e.textContent = DATA_ASOF; });
 </script>
 </body>
 </html>
